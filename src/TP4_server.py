@@ -33,9 +33,17 @@ class Server:
 
         S'assure que les dossiers de données du serveur existent.
         """
-        # self._server_socket
-        # self._client_socs
-        # self._logged_users
+        self._server_socket: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        try:
+            self._server_socket.bind("localhost", 1400)
+        except socket.error as e:
+            sys.exit(-1)
+
+        self._client_socs : [socket.socket] = list()
+        self._logged_users : {socket.socket : str} = dict()
+        
         # ...
 
     def cleanup(self) -> None:
