@@ -38,13 +38,14 @@ class Server:
 
         try:
             self._server_socket.bind("localhost", 1400)
+            self._server_socket.listen()
+            
         except socket.error as e:
             sys.exit(-1)
 
         self._client_socs : [socket.socket] = list()
         self._logged_users : {socket.socket : str} = dict()
-        
-        # ...
+
 
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
