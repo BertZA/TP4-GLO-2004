@@ -33,18 +33,18 @@ class Server:
 
         S'assure que les dossiers de données du serveur existent.
         """
-        self._server_socket: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
             self._server_socket.bind("localhost", 1400)
             self._server_socket.listen()
-            
+
         except socket.error as e:
             sys.exit(-1)
 
-        self._client_socs : [socket.socket] = list()
-        self._logged_users : {socket.socket : str} = dict()
+        self._client_socs : list = []
+        self._logged_users : dict = {}
 
 
     def cleanup(self) -> None:
@@ -58,6 +58,8 @@ class Server:
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
+        self._client_socs.remove(client_soc)
+        self._logged_users.pop(client_soc)
 
     def _create_account(self, client_soc: socket.socket,
                         payload: gloutils.AuthPayload
