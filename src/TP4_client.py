@@ -1,9 +1,9 @@
 """\
 GLO-2000 Travail pratique 4 - Client
 Noms et numéros étudiants:
--
--
--
+- Bertrand Awenze : 536 883 612
+- Michäel Tremblay : 537 040 140
+- Joseph Eli Nyimilongo : 111 261 884
 """
 
 import argparse
@@ -26,6 +26,7 @@ class Client:
         Prépare un attribut `_username` pour stocker le nom d'utilisateur
         courant. Laissé vide quand l'utilisateur n'est pas connecté.
         """
+        
 
     def _register(self) -> None:
         """

@@ -38,7 +38,7 @@ class Server:
         self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
-            self._server_socket.bind("localhost", gloutils.APP_PORT)
+            self._server_socket.bind(("localhost", gloutils.APP_PORT))
             self._server_socket.listen()
 
         except socket.error as e:
@@ -184,7 +184,7 @@ class Server:
         waiters = []
         while True:
             # Select readable sockets
-            select_result = select([self._server_socket] + self._client_socs, 
+            select_result = select.select([self._server_socket] + self._client_socs, 
                                    [], 
                                    [])
             waiters = select_result[0]
