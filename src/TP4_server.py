@@ -89,7 +89,7 @@ class Server:
                 if len(password) >= 10:
                     reg = re.compile(r'^(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z]).+$')
                     if reg.match(password):
-                        #créer le dossier ici
+                        #créer le dossier utilisateur ici
                         pass_hashed = hashlib.sha3_512()
                         pass_hashed.update(password)
                         password = pass_hashed.hexdigest()
@@ -103,6 +103,7 @@ class Server:
                 msg = "Ce nom d'utilisateur existe déjà"
         else:
             msg = "Votre nom d'utilisateur ne doit contenir que de caractères alphanuméques"
+
         return gloutils.GloMessage(header, msg)
 
     def _login(self, client_soc: socket.socket, payload: gloutils.AuthPayload
@@ -183,8 +184,44 @@ class Server:
         waiters = []
         while True:
             # Select readable sockets
+            select_result = select([self._server_socket] + self._client_socs, 
+                                   [], 
+                                   [])
+            waiters = select_result[0]
+
             for waiter in waiters:
-                # Handle sockets
+                if waiter == self._server_socket:
+                    self._accept_client(waiter);
+                
+                else:
+                    try :
+                        client_data = glosocket.recv_mesg(waiter)
+                    except glosocket.GLOSocketError:
+                        self._remove_client(waiter)
+                        continue
+                    
+                    match json.loads(client_data):
+                        case {"header" : gloutils.Headers.AUTH_LOGIN,
+                              "payload" : payload}:
+                            reply = self._login(waiter, payload)
+                            glosocket.send_mesg(waiter, reply)
+                        
+                        case {"header" : gloutils.Headers.AUTH_LOGOUT}:
+                            self._logout(waiter)
+
+                        case {"header" : gloutils.Headers.AUTH_REGISTER,
+                              "payload": payload}:
+                            self._create_account(waiter, payload)
+                        
+                        case {"header" : gloutils.Headers.INBOX_READING_CHOICE}:
+                            pass
+
+                        case {"header" : gloutils.Headers.INBOX_READING_REQUEST}:
+                            pass
+                        case {"header"  : gloutils.Headers.STATS_REQUEST}:
+                            pass
+                        case {"header" : gloutils.Headers.EMAIL_SENDING}:
+                            pass
                 pass
 
 
