@@ -48,6 +48,14 @@ class Server:
         self._logged_users : dict[socket.socket : str] = {}
         self._client_accounts: dict[str : str] = {}
 
+        if  not os.path.exists(gloutils.SERVER_DATA_DIR):
+            os.mkdir(gloutils.SERVER_DATA_DIR)
+
+            if not os.path.exists(os.path.join(
+                gloutils.SERVER_DATA_DIR, gloutils.SERVER_LOST_DIR)):
+                os.mkdir(os.path.join(
+                gloutils.SERVER_DATA_DIR, gloutils.SERVER_LOST_DIR))
+
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
         for client_soc in self._client_socs:
