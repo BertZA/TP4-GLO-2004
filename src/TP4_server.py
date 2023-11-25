@@ -122,22 +122,25 @@ class Server:
         Si les identifiants sont valides, associe le socket à l'utilisateur et
         retourne un succès, sinon retourne un message d'erreur.
         """
-        message: gloutils.GloMessage = gloutils.GloMessage(
-            gloutils.Headers.ERROR,
-            "Désolé, nous ne sommes pas parvenus à vous connecter"
+        message: gloutils.GloMessage = gloutils.GloMessage( 
+            header = gloutils.Headers.ERROR,
+            payload= "Nom d'utilisateur introuvable"
         )
-        
+
         username: str = payload['username'].capitalize()
         pass_hashed = hashlib.sha3_512()
-        pass_hashed.update(payload['password'])
+        pass_hashed.update(payload['password'].encode('utf-8'))
         password :str = pass_hashed.hexdigest();
 
         if username in self._client_accounts :
             if self._client_accounts[username] == password:
                 self._logged_users[client_soc] = username
                 message = gloutils.GloMessage(
-                    gloutils.Headers.OK
+                    header = gloutils.Headers.OK,
+                    payload = ""
                 )
+            else:
+                message["payload"] = "Mot de passe incorrect"
                 
         return message
 
@@ -215,7 +218,7 @@ class Server:
                         case {"header" : gloutils.Headers.AUTH_LOGIN,
                               "payload" : payload}:
                             reply = self._login(waiter, payload)
-                            glosocket.send_mesg(waiter, reply)
+                            glosocket.send_mesg(waiter, json.dumps(reply))
                         
                         case {"header" : gloutils.Headers.AUTH_LOGOUT}:
                             self._logout(waiter)
