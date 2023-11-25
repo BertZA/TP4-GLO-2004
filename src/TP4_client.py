@@ -32,7 +32,6 @@ class Client:
         except socket.error :
             sys.exit(-1)    
         self._username : str = ""
-        self._server_socket :socket.socket = destination
 
     def _register(self) -> None:
         """
@@ -51,6 +50,25 @@ class Client:
         Si la connexion est effectuée avec succès, l'attribut `_username`
         est mis à jour, sinon l'erreur est affichée.
         """
+        username : str = str(input("\nNom d'utilisateur\t:>>> "))
+        user_password : str = getpass.getpass(f"Mot de passe{' ' * 5}\t:>>> ")
+
+        user_auth : gloutils.AuthPayload = gloutils.AuthPayload(username = username,
+                                                                password = user_password)
+        login_request : gloutils.GloMessage = gloutils.GloMessage(header = gloutils.Headers.AUTH_LOGIN,
+                                                                  payload = user_auth)
+
+
+        glosocket.send_mesg(self._client_socket, 
+                            json.dumps(login_request)
+                            )
+
+        response : str = glosocket.recv_mesg(self._client_socket)
+        response : gloutils.GloMessage = json.loads(response)
+
+        if response["header"] != gloutils.Headers.OK:
+            print(f"\033[1;31m\n{response['payload']}\033[0m")
+        
 
     def _quit(self) -> None:
         """
@@ -113,8 +131,8 @@ class Client:
                 user_reply: int = None
                 while user_reply == None:
                     try: 
-                        user_reply = int (input(f"\n{gloutils.CLIENT_USE_CHOICE}\n\n:>>> "))
-                        if not user_reply >= 1 or not user_reply <= 4:
+                        user_reply = int (input(f"\n{gloutils.CLIENT_AUTH_CHOICE}\n\n:>>> "))
+                        if not user_reply >= 1 or not user_reply <= 3:
                             raise ValueError
                     except ValueError : 
                         print("\033[1;31m\nLa valeur que vous avez indiqué est incorrecte\033[0m")
@@ -122,15 +140,12 @@ class Client:
 
                 match user_reply:
                     case 1:
-                        self._read_email()
+                        self._register()
                         break
                     case 2 :
-                        self._send_email()
+                        self._login()
                     case 3:
-                        self._check_stats()
-                    case 4:
-                        self._logout()
-                        #should_quit = True
+                        sys.exit(0)
                         
     
 
