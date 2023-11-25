@@ -1,9 +1,9 @@
 """\
 GLO-2000 Travail pratique 4 - Serveur
 Noms et numéros étudiants:
--
--
--
+- Bertrand Awenze : 536 883 612
+- Michäel Tremblay : 537 040 140
+- Joseph Eli Nyimilongo : 111 261 884
 """
 
 import hashlib
