@@ -41,6 +41,23 @@ class Client:
         Si la création du compte s'est effectuée avec succès, l'attribut
         `_username` est mis à jour, sinon l'erreur est affichée.
         """
+        username : str = str(input("\nNom d'utilisateur\t:>>> "))
+        user_password : str = getpass.getpass(f"Mot de passe{' ' * 5}\t:>>> ")
+
+        user_auth : gloutils.AuthPayload = gloutils.AuthPayload(username = username,
+                                                                password = user_password)
+        register_request : gloutils.GloMessage = gloutils.GloMessage(header = gloutils.Headers.AUTH_REGISTER,
+                                                                  payload = user_auth)
+        glosocket.send_mesg(self._client_socket, 
+                            json.dumps(register_request))
+        
+        response: str = glosocket.recv_mesg(self._client_socket)
+        response: gloutils.GloMessage = json.loads(response)
+
+        if response["header"] != gloutils.Headers.OK:
+            print(f"\033[1;31m\n{response['payload']}\033[0m")
+        else:
+            self._username = username.capitalize()
 
     def _login(self) -> None:
         """
@@ -68,7 +85,8 @@ class Client:
 
         if response["header"] != gloutils.Headers.OK:
             print(f"\033[1;31m\n{response['payload']}\033[0m")
-        
+        else:
+            self._username = username.capitalize()
 
     def _quit(self) -> None:
         """
