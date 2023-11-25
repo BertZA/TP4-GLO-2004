@@ -92,27 +92,38 @@ class Server:
         password : str = payload['password']
 
         if re.search(r"\w", username) is not None:
-            if not username in self._client_accounts:
-            #verifier nom pris ou pas
+            #vérifier nom pris ou pas
+            if not os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, username)):
                 if len(password) >= 10:
                     reg = re.compile(r'^(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z]).+$')
+                    #vérifier mot de passe
                     if reg.match(password):
-                        #créer le dossier utilisateur ici
-                        pass_hashed = hashlib.sha3_512()
-                        pass_hashed.update(password)
-                        password = pass_hashed.hexdigest()
-                        #écrire dans le fichier dans le dossier ici
-                        return gloutils.GloMessage(gloutils.Headers.OK)
-                    else:
-                        msg = "Votre mot de passe n'est pas assez fort"
-                else:
-                    msg = "Votre mot de passe n'est assez long"
-            else:
-                msg = "Ce nom d'utilisateur existe déjà"
-        else:
-            msg = "Votre nom d'utilisateur ne doit contenir que de caractères alphanuméques"
+                        #créer dossier utilisateur
+                        os.mkdir(os.path.join(gloutils.SERVER_DATA_DIR, username))
 
-        return gloutils.GloMessage(header, msg)
+                        pass_hash = hashlib.sha3_512()
+                        pass_hash.update(password.encode('utf-8'))
+                        password = pass_hash.hexdigest()
+
+                        #écrire dans le fichier dans le dossier
+                        with open(gloutils.PASSWORD_FILENAME, 'w') as password_file:
+                            password_file.write(password)
+                            password_file.close()
+
+                        self._logged_users[client_soc] = username
+
+                        return gloutils.GloMessage(header  = gloutils.Headers.OK,
+                                                   payload = "")
+                    else:
+                        msg = "Mot de passe pas assez fort"
+                else:
+                    msg = "Mot de passe pas assez long"
+            else:
+                msg = "Nom d' utilisateur existant"
+        else:
+            msg = "Le nom d'utilisateur ne doit contenir que de caractères alphanuméques"
+
+        return gloutils.GloMessage(header = header, payload = msg)
 
     def _login(self, client_soc: socket.socket, payload: gloutils.AuthPayload
                ) -> gloutils.GloMessage:
@@ -132,8 +143,14 @@ class Server:
         pass_hashed.update(payload['password'].encode('utf-8'))
         password :str = pass_hashed.hexdigest();
 
-        if username in self._client_accounts :
-            if self._client_accounts[username] == password:
+        if os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, username)):
+
+            with open(os.path.join(gloutils.SERVER_DATA_DIR, username,
+                                   gloutils.PASSWORD_FILENAME), 'r') as password_file:
+                saved_password : str = password_file.read().strip()
+                password_file.close()                
+
+            if saved_password == password:
                 self._logged_users[client_soc] = username
                 message = gloutils.GloMessage(
                     header = gloutils.Headers.OK,
