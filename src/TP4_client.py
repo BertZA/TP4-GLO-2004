@@ -31,7 +31,8 @@ class Client:
             self._client_socket.connect((destination, gloutils.APP_PORT))
         except socket.error :
             sys.exit(-1)    
-        self._username : str
+        self._username : str = ""
+        self._server_socket :socket.socket = destination
 
     def _register(self) -> None:
         """
@@ -89,6 +90,7 @@ class Client:
 
         Affiche les statistiques à l'aide du gabarit `STATS_DISPLAY`.
         """
+    
 
     def _logout(self) -> None:
         """
@@ -96,6 +98,9 @@ class Client:
 
         Met à jour l'attribut `_username`.
         """
+        msg_logout = gloutils.GloMessage(gloutils.Headers.AUTH_LOGOUT)
+        glosocket.send_mesg(msg_logout)
+        self._username = None
 
     def run(self) -> None:
         """Point d'entrée du client."""
@@ -103,20 +108,40 @@ class Client:
 
         while not should_quit:
             if not self._username:
-                # Authentication menu
-                pass
-            else:
-                # Main menu
-                pass
 
+                # Authentication menu
+                user_reply: int = None
+                while user_reply == None:
+                    try: 
+                        user_reply = int (input(gloutils.CLIENT_USE_CHOICE))
+                        if not user_reply >= 1 or not user_reply <= 4:
+                            raise ValueError
+                    except ValueError : 
+                        print("\033[1;31mLa valeur que vous avez indiqué est incorrecte\033[0m")
+                        user_reply = None
+
+                match user_reply:
+                    case 1:
+                        self._read_email()
+                    case 2 :
+                        self._send_email()
+                    case 3:
+                        self._check_stats()
+                    case 4:
+                        self._logout()
+                        #should_quit = True
+                        
+    
 
 def _main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--destination", action="store",
-                        dest="dest", required=True,
-                        help="Adresse IP/URL du serveur.")
-    args = parser.parse_args(sys.argv[1:])
-    client = Client(args.dest)
+    #parser = argparse.ArgumentParser()
+    #parser.add_argument("-d", "--destination", action="store",
+    #                    dest="dest", required=True,
+    #                    help="Adresse IP/URL du serveur.")
+    #args = parser.parse_args(sys.argv[1:])
+    client = Client(
+        "127.0.0.1"
+    )
     client.run()
     return 0
 
