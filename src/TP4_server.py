@@ -199,7 +199,10 @@ class Server:
 
             for waiter in waiters:
                 if waiter == self._server_socket:
-                    self._accept_client(waiter);
+                    print(type(waiter))
+                    print(waiter)
+                    self._accept_client()
+                    print(self._client_socs)                    
                 
                 else:
                     try :

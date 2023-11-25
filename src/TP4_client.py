@@ -113,16 +113,17 @@ class Client:
                 user_reply: int = None
                 while user_reply == None:
                     try: 
-                        user_reply = int (input(gloutils.CLIENT_USE_CHOICE))
+                        user_reply = int (input(f"\n{gloutils.CLIENT_USE_CHOICE}\n\n:>>> "))
                         if not user_reply >= 1 or not user_reply <= 4:
                             raise ValueError
                     except ValueError : 
-                        print("\033[1;31mLa valeur que vous avez indiqué est incorrecte\033[0m")
+                        print("\033[1;31m\nLa valeur que vous avez indiqué est incorrecte\033[0m")
                         user_reply = None
 
                 match user_reply:
                     case 1:
                         self._read_email()
+                        break
                     case 2 :
                         self._send_email()
                     case 3:
