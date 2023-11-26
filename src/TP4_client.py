@@ -108,6 +108,7 @@ class Client:
         retourner au menu principal.
         """
 
+
     def _send_email(self) -> None:
         """
         Demande à l'utilisateur respectivement:
@@ -119,6 +120,35 @@ class Client:
 
         Transmet ces informations avec l'entête `EMAIL_SENDING`.
         """
+        dest_adress : str = str(input("Adresse de destination :>>> "))
+        mail_subject: str = str(input("Sujet du courriel :>>> "))
+        mail_content: str = str(input("Contenu du mail \n:>>> "))
+        time : str = gloutils.get_current_utc_time()
+
+        mail : gloutils.EmailContentPayload = gloutils.EmailContentPayload(
+            sender = self._username,
+            destination = dest_adress,
+            subject = mail_subject,
+            date = time,
+            content = mail_content
+        )
+
+        mail : gloutils.GloMessage = gloutils.GloMessage(
+            header = gloutils.Headers.EMAIL_SENDING,
+            payload = mail
+        )
+
+        glosocket.send_mesg(self._client_socket, json.dumps(mail))
+
+        confirmation : gloutils.GloMessage = json.loads(
+            glosocket.recv_mesg(self._client_socket)
+        )
+
+        if confirmation["header"] != gloutils.Headers.OK :
+            print(f"\033[1;31m\n{confirmation['payload']}\033[0m")
+            return
+        
+        print(f"\n{confirmation['payload']}")
 
     def _check_stats(self) -> None:
         """
@@ -143,10 +173,12 @@ class Client:
         should_quit = False
 
         while not should_quit:
+
+            user_reply: int = None
+
             if not self._username:
 
                 # Authentication menu
-                user_reply: int = None
                 while user_reply == None:
                     try: 
                         user_reply = int (input(f"\n{gloutils.CLIENT_AUTH_CHOICE}\n\n:>>> "))
@@ -159,11 +191,30 @@ class Client:
                 match user_reply:
                     case 1:
                         self._register()
-                        break
                     case 2 :
                         self._login()
                     case 3:
                         sys.exit(0)
+
+            else :
+                while user_reply == None:
+                    try:
+                        user_reply = int (input(f"\n{gloutils.CLIENT_USE_CHOICE}\n\n:>>> "))
+                        if not user_reply >= 1 or not user_reply <= 4:
+                            raise ValueError
+                    except ValueError : 
+                        print("\033[1;31m\nLa valeur que vous avez indiqué est incorrecte\033[0m")
+                        user_reply = None
+                
+                match user_reply :
+                    case 1:
+                        self._read_email()
+                    case 2:
+                        self._send_email()
+                    case 3:
+                        self._check_stats()
+                    case 4:
+                        self._quit()
                         
     
 
