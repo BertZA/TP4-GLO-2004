@@ -243,7 +243,8 @@ class Server:
 
                         case {"header" : gloutils.Headers.AUTH_REGISTER,
                               "payload": payload}:
-                            self._create_account(waiter, payload)
+                            reply = self._create_account(waiter, payload)
+                            glosocket.send_mesg(waiter, json.dumps(reply))
                         
                         case {"header" : gloutils.Headers.INBOX_READING_CHOICE}:
                             pass
