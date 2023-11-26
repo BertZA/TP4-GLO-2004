@@ -88,7 +88,7 @@ class Server:
         header : int = gloutils.Headers.ERROR
         msg : str = ""
         
-        username : str = payload['username'].capitalize()
+        username : str = payload['username'].upper()
         password : str = payload['password']
 
         if re.search(r"\w", username) is not None:
@@ -106,7 +106,8 @@ class Server:
                         password = pass_hash.hexdigest()
 
                         #écrire dans le fichier dans le dossier
-                        with open(gloutils.PASSWORD_FILENAME, 'w') as password_file:
+                        with open(os.path.join(gloutils.SERVER_DATA_DIR, username,
+                                   gloutils.PASSWORD_FILENAME), 'w') as password_file:
                             password_file.write(password)
                             password_file.close()
 
@@ -138,7 +139,7 @@ class Server:
             payload= "Nom d'utilisateur introuvable"
         )
 
-        username: str = payload['username'].capitalize()
+        username: str = payload['username'].upper()
         pass_hashed = hashlib.sha3_512()
         pass_hashed.update(payload['password'].encode('utf-8'))
         password :str = pass_hashed.hexdigest();
