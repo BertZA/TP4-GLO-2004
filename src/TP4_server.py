@@ -206,7 +206,30 @@ class Server:
 
         Retourne un messange indiquant le succès ou l'échec de l'opération.
         """
-        return gloutils.GloMessage()
+        message : gloutils.GloMessage = gloutils.GloMessage(
+            header = gloutils.Headers.ERROR,
+            payload = "Impossible de communiquer avec une adresse externe"
+        )
+
+        #Est-ce un mail interne ?
+        if payload["destination"].endswith("@" + gloutils.SERVER_DOMAIN):
+            destination : str = payload["destination"].removesuffix("@" + gloutils.SERVER_DOMAIN).upper()
+            source : str = payload["sender"].upper()
+            subject : str = payload["subject"].lower()
+
+            #Est-ce que la destination existe ?
+            if os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, destination)):
+                #écrire le mail
+                with open(os.path.join(gloutils.SERVER_DATA_DIR, destination, source, subject)) as mail_file:
+                    mail_file.write(json.dumps(payload))
+                    mail_file.close
+                    
+                message = {"header" : gloutils.Headers.OK, 
+                           "payload": "Mail envoyé avec succès"}
+            else:
+                message["payload"] = "Adresse de destination introuvable"
+
+        return message
 
     def run(self):
         """Point d'entrée du serveur."""
