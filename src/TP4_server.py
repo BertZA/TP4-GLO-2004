@@ -71,8 +71,8 @@ class Server:
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
+        self._logout(client_soc)
         self._client_socs.remove(client_soc)
-        self._logged_users.pop(client_soc)
         client_soc.close()
 
     def _create_account(self, client_soc: socket.socket,
@@ -164,7 +164,10 @@ class Server:
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
-        self._logged_users.pop(client_soc)
+        try :
+            self._logged_users.pop(client_soc)
+        except KeyError :
+            pass
 
 
     def _get_email_list(self, client_soc: socket.socket
@@ -228,7 +231,20 @@ class Server:
         Récupère le contenu de l'email dans le dossier de l'utilisateur associé
         au socket.
         """
-        return gloutils.GloMessage()
+        message : gloutils.GloMessage = gloutils.GloMessage(
+            header  = gloutils.Headers.OK, 
+            payload = ""
+        )
+        username :str = self._logged_users[client_soc]
+        subject : str = (payload).lower()
+        mail_path = os.path.join(gloutils.SERVER_DATA_DIR,
+                                 username,
+                                 subject.replace(' ', '_') 
+                                 )
+        with open(mail_path, 'r') as mail_file :
+            message["payload"] = json.loads(mail_file.read().strip())
+            mail_file.close()
+        return message
 
     def _get_stats(self, client_soc: socket.socket) -> gloutils.GloMessage:
         """
@@ -308,8 +324,7 @@ class Server:
                               "payload" : payload}:
                             self._logout(waiter)
                         case {"header" : gloutils.Headers.BYE}:
-                            self._logout(waiter)
-                            waiter.close()
+                            self._remove_client(waiter)
 
                         case {"header" : gloutils.Headers.AUTH_REGISTER,
                               "payload": payload}:
