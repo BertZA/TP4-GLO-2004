@@ -214,19 +214,24 @@ class Server:
         #Est-ce un mail interne ?
         if payload["destination"].endswith("@" + gloutils.SERVER_DOMAIN):
             destination : str = payload["destination"].removesuffix("@" + gloutils.SERVER_DOMAIN).upper()
-            source : str = payload["sender"].upper()
+            source : str = payload["sender"].removesuffix("@" + gloutils.SERVER_DOMAIN).upper()
             subject : str = payload["subject"].lower()
 
             #Est-ce que la destination existe ?
             if os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, destination)):
+                #créer le contact si non existant
+                if not os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, destination, source)):
+                    os.mkdir(os.path.join(gloutils.SERVER_DATA_DIR, destination,source))
+
                 #écrire le mail
-                with open(os.path.join(gloutils.SERVER_DATA_DIR, destination, source, subject)) as mail_file:
+                with open(os.path.join(gloutils.SERVER_DATA_DIR, destination, source, subject), 'w') as mail_file:
                     mail_file.write(json.dumps(payload))
-                    mail_file.close
-                    
+                    mail_file.close()
+
                 message = {"header" : gloutils.Headers.OK, 
                            "payload": "Mail envoyé avec succès"}
             else:
+                
                 message["payload"] = "Adresse de destination introuvable"
 
         return message
@@ -261,7 +266,8 @@ class Server:
                             reply = self._login(waiter, payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
                         
-                        case {"header" : gloutils.Headers.AUTH_LOGOUT}:
+                        case {"header" : gloutils.Headers.AUTH_LOGOUT,
+                              "payload" : payload}:
                             self._logout(waiter)
 
                         case {"header" : gloutils.Headers.AUTH_REGISTER,
@@ -269,15 +275,20 @@ class Server:
                             reply = self._create_account(waiter, payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
                         
-                        case {"header" : gloutils.Headers.INBOX_READING_CHOICE}:
+                        case {"header" : gloutils.Headers.INBOX_READING_CHOICE,
+                              "payload" : payload}:
                             pass
 
-                        case {"header" : gloutils.Headers.INBOX_READING_REQUEST}:
+                        case {"header" : gloutils.Headers.INBOX_READING_REQUEST,
+                              "payload" : payload}:
                             pass
-                        case {"header"  : gloutils.Headers.STATS_REQUEST}:
+                        case {"header"  : gloutils.Headers.STATS_REQUEST,
+                              "payload" : payload}:
                             pass
-                        case {"header" : gloutils.Headers.EMAIL_SENDING}:
-                            pass
+                        case {"header" : gloutils.Headers.EMAIL_SENDING,
+                              "payload" : payload}:
+                            reply  = self._send_email(payload)
+                            glosocket.send_mesg(waiter, json.dumps(reply))
                 pass
 
 
