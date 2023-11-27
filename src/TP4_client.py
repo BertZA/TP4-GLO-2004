@@ -159,6 +159,8 @@ class Client:
         
         #Envoi choix du message à lire
         glosocket.send_mesg(self._client_socket, json.dumps(request))
+
+        #Retour du serveur, le mail à afficher
         reply : gloutils.GloMessage = json.loads(glosocket.recv_mesg(self._client_socket))
         print(reply)
 
