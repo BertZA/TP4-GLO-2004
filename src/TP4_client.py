@@ -57,7 +57,7 @@ class Client:
         if response["header"] != gloutils.Headers.OK:
             print(f"\033[1;31m\n{response['payload']}\033[0m")
         else:
-            self._username = username.capitalize()
+            self._username = username.lower() + "@" + gloutils.SERVER_DOMAIN
 
     def _login(self) -> None:
         """
@@ -86,7 +86,7 @@ class Client:
         if response["header"] != gloutils.Headers.OK:
             print(f"\033[1;31m\n{response['payload']}\033[0m")
         else:
-            self._username = username.capitalize()
+            self._username =  username.lower() + "@" + gloutils.SERVER_DOMAIN
 
     def _quit(self) -> None:
         """
@@ -120,9 +120,9 @@ class Client:
 
         Transmet ces informations avec l'entête `EMAIL_SENDING`.
         """
-        dest_adress : str = str(input("Adresse de destination :>>> "))
-        mail_subject: str = str(input("Sujet du courriel :>>> "))
-        mail_content: str = str(input("Contenu du mail \n:>>> "))
+        dest_adress : str = str(input("Adresse de destination\t:>>> "))
+        mail_subject: str = str(input(f"Sujet du courriel{' '*5}\t:>>> "))
+        mail_content: str = str(input("\nContenu du mail \n:>>> "))
         time : str = gloutils.get_current_utc_time()
 
         mail : gloutils.EmailContentPayload = gloutils.EmailContentPayload(
@@ -148,7 +148,8 @@ class Client:
             print(f"\033[1;31m\n{confirmation['payload']}\033[0m")
             return
         
-        print(f"\n{confirmation['payload']}")
+        print(f"\033[1;32m\n{confirmation['payload']}\033[0m")
+        
 
     def _check_stats(self) -> None:
         """
