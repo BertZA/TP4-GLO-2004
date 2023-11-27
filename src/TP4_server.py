@@ -72,7 +72,11 @@ class Server:
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
         self._logout(client_soc)
-        self._client_socs.remove(client_soc)
+        try:
+            self._client_socs.remove(client_soc)
+        except ValueError:
+            pass
+
         client_soc.close()
 
     def _create_account(self, client_soc: socket.socket,
@@ -167,7 +171,8 @@ class Server:
         try :
             self._logged_users.pop(client_soc)
         except KeyError :
-            pass
+            self._client_socs.remove(client_soc)
+            
 
 
     def _get_email_list(self, client_soc: socket.socket
@@ -251,7 +256,27 @@ class Server:
         Récupère le nombre de courriels et la taille du dossier et des fichiers
         de l'utilisateur associé au socket.
         """
-        return gloutils.GloMessage()
+        message : gloutils.GloMessage = gloutils.GloMessage(
+            header  = gloutils.Headers.OK,
+            payload = ""
+        )
+        username = self._logged_users[client_soc]
+        path = os.path.join(gloutils.SERVER_DATA_DIR, username)
+        files_list : list[str] = os.listdir(path)
+        size: float = 0
+
+        for file in files_list:
+            size += os.path.getsize(os.path.join(path, file))
+        
+        stats : gloutils.StatsPayload = gloutils.StatsPayload(
+            count = len(files_list) - 1, # -1 car fichier mot de passe n'est pas un mail
+            size = size
+        )
+
+        #charger les statistiques
+        message["payload"] = stats
+
+        return message
 
     def _send_email(self, payload: gloutils.EmailContentPayload
                     ) -> gloutils.GloMessage:
@@ -269,12 +294,12 @@ class Server:
             header = gloutils.Headers.ERROR,
             payload = "Impossible de communiquer avec une adresse externe"
         )
+        subject : str = payload["subject"].lower().replace(' ', '_')
 
         #Est-ce un mail interne ?
         if payload["destination"].endswith("@" + gloutils.SERVER_DOMAIN):
             destination : str = payload["destination"].removesuffix("@" + gloutils.SERVER_DOMAIN).upper()
-            subject : str = payload["subject"].lower().replace(' ', '_')
-
+            
             #Est-ce que la destination existe ?
             if os.path.exists(os.path.join(gloutils.SERVER_DATA_DIR, destination)):
                 #écrire le mail
@@ -284,9 +309,15 @@ class Server:
 
                 message = {"header" : gloutils.Headers.OK, 
                            "payload": "Mail envoyé avec succès"}
+                
+                return message
+            
             else:
-
                 message["payload"] = "Adresse de destination introuvable"
+
+        with open(os.path.join(gloutils.SERVER_DATA_DIR, gloutils.SERVER_LOST_DIR, subject), 'w') as mail_file:
+                    mail_file.write(json.dumps(payload))
+                    mail_file.close()
 
         return message
 
@@ -302,10 +333,8 @@ class Server:
 
             for waiter in waiters:
                 if waiter == self._server_socket:
-                    print(type(waiter))
-                    print(waiter)
                     self._accept_client()
-                    print(self._client_socs)                    
+                                      
                 
                 else:
                     try :
@@ -317,17 +346,20 @@ class Server:
                     match json.loads(client_data):
                         case {"header" : gloutils.Headers.AUTH_LOGIN,
                               "payload" : payload}:
+                            
                             reply = self._login(waiter, payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
                         
                         case {"header" : gloutils.Headers.AUTH_LOGOUT,
                               "payload" : payload}:
                             self._logout(waiter)
+
                         case {"header" : gloutils.Headers.BYE}:
                             self._remove_client(waiter)
 
                         case {"header" : gloutils.Headers.AUTH_REGISTER,
                               "payload": payload}:
+                            
                             reply = self._create_account(waiter, payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
                         
@@ -339,17 +371,21 @@ class Server:
 
                         case {"header" : gloutils.Headers.INBOX_READING_REQUEST,
                               "payload" : payload}:
+                            
                             reply = self._get_email_list(waiter)
                             glosocket.send_mesg(waiter, json.dumps(reply))
 
                         case {"header"  : gloutils.Headers.STATS_REQUEST,
                               "payload" : payload}:
-                            pass
+                            reply = self._get_stats(waiter)
+                            glosocket.send_mesg(waiter, json.dumps(reply))
+
                         case {"header" : gloutils.Headers.EMAIL_SENDING,
                               "payload" : payload}:
+                            
                             reply  = self._send_email(payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
-                pass
+                
 
 
 def _main() -> int:

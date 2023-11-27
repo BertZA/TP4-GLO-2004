@@ -227,7 +227,19 @@ class Client:
 
         Affiche les statistiques à l'aide du gabarit `STATS_DISPLAY`.
         """
-    
+        request : gloutils.GloMessage = gloutils.GloMessage(
+            header  = gloutils.Headers.STATS_REQUEST,
+            payload = ""
+        )
+
+        glosocket.send_mesg(self._client_socket, json.dumps(request))
+        reply = json.loads(glosocket.recv_mesg(self._client_socket))
+        reply : gloutils.StatsPayload = reply["payload"]
+
+        print("\n" + gloutils.STATS_DISPLAY.format(
+            count = reply["count"],
+            size  = reply["size"]
+        ))
 
     def _logout(self) -> None:
         """
