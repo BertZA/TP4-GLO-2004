@@ -93,6 +93,12 @@ class Client:
         Préviens le serveur de la déconnexion avec l'entête `BYE` et ferme le
         socket du client.
         """
+        quit_request : gloutils.GloMessage  = gloutils.GloMessage(
+            header = gloutils.Headers.BYE,
+            payload = ""
+        )
+        glosocket.send_mesg(json.dumps(quit_request))
+        self._client_socket.close()
 
     def _read_email(self) -> None:
         """
@@ -107,6 +113,55 @@ class Client:
         S'il n'y a pas de courriel à lire, l'utilisateur est averti avant de
         retourner au menu principal.
         """
+        mails_list : list[str] = []
+        request : gloutils.GloMessage  = gloutils.GloMessage(
+            header = gloutils.Headers.INBOX_READING_REQUEST, 
+            payload = ""
+        )
+
+        glosocket.send_mesg(self._client_socket, json.dumps(request))
+        reply : gloutils.GloMessage = json.loads(glosocket.recv_mesg(self._client_socket))
+        mails_list = reply["payload"]["email_list"]
+
+        if len(mails_list) == 0:
+            return
+        
+        print(f"\n{'#'*18} Mail(s) reçu(s) {'#'*18}\n")
+
+        for mail in mails_list:
+            print(f"{mail}")
+
+        user_choice: int = None
+
+        while user_choice is None:
+            try:
+                user_choice = int(input(f"\nNuméro du mail que vous souhaitez ouvrir [1-{len(mails_list)}]\t:>>> "))
+                if not user_choice >= 1 or not user_choice <= len(mails_list):
+                    raise ValueError
+            except ValueError:
+                print("\033[1;31m\nLa valeur que vous avez indiqué est incorrecte\033[0m")
+                user_choice = None
+
+        """
+        Extraction du sujet du mail, dans le but d'eviter d'aller commencer par chercher
+        dans le dossier du client quel mail correspond au numéro entré.
+        Il serait mieux de demander precisement au serveur quelle mail le client veut.
+        """
+        user_choice = mails_list[user_choice - 1]
+        user_choice = user_choice.split("-")[1]
+        user_choice = user_choice.split(",")[0].strip()
+        user_choice = user_choice[:-3]
+
+        request = gloutils.GloMessage(
+            header = gloutils.Headers.INBOX_READING_CHOICE,
+            payload = user_choice 
+            )
+        
+        #Envoi choix du message à lire
+        glosocket.send_mesg(self._client_socket, json.dumps(request))
+        reply : gloutils.GloMessage = json.loads(glosocket.recv_mesg(self._client_socket))
+        print(reply)
+
 
 
     def _send_email(self) -> None:
@@ -120,9 +175,14 @@ class Client:
 
         Transmet ces informations avec l'entête `EMAIL_SENDING`.
         """
-        dest_adress : str = str(input("Adresse de destination\t:>>> "))
+        dest_adress : str = str(input("\nAdresse de destination\t:>>> "))
         mail_subject: str = str(input(f"Sujet du courriel{' '*5}\t:>>> "))
-        mail_content: str = str(input("\nContenu du mail \n:>>> "))
+        mail_content: str = ""
+
+        print(f"\n{'#'*18} Contenu du mail {'#'*18}\n")
+        while not mail_content.endswith("."):
+            mail_content += input() 
+            
         time : str = gloutils.get_current_utc_time()
 
         mail : gloutils.EmailContentPayload = gloutils.EmailContentPayload(
