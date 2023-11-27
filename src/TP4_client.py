@@ -97,7 +97,7 @@ class Client:
             header = gloutils.Headers.BYE,
             payload = ""
         )
-        glosocket.send_mesg(json.dumps(quit_request))
+        glosocket.send_mesg(self._client_socket,json.dumps(quit_request))
         self._client_socket.close()
 
     def _read_email(self) -> None:
@@ -147,10 +147,10 @@ class Client:
         dans le dossier du client quel mail correspond au numéro entré.
         Il serait mieux de demander precisement au serveur quelle mail le client veut.
         """
-        user_choice = mails_list[user_choice - 1]
+        user_choice : str = mails_list[user_choice - 1]
         user_choice = user_choice.split("-")[1]
-        user_choice = user_choice.split(",")[0].strip()
-        user_choice = user_choice[:-3]
+        user_choice = user_choice.split(",")[0]
+        user_choice = user_choice[:-3].strip()
 
         request = gloutils.GloMessage(
             header = gloutils.Headers.INBOX_READING_CHOICE,
@@ -162,7 +162,15 @@ class Client:
 
         #Retour du serveur, le mail à afficher
         reply : gloutils.GloMessage = json.loads(glosocket.recv_mesg(self._client_socket))
-        print(reply)
+        reply : gloutils.EmailContentPayload = reply["payload"]
+        
+        print("\n" + gloutils.EMAIL_DISPLAY.format(
+            sender  = reply['sender'],
+            to      = reply["destination"],
+            subject = reply["subject"],
+            date    = reply["date"],
+            body    = reply["content"]
+        ))
 
 
 
@@ -183,7 +191,7 @@ class Client:
 
         print(f"\n{'#'*18} Contenu du mail {'#'*18}\n")
         while not mail_content.endswith("."):
-            mail_content += input() 
+            mail_content += "\n" + input() 
             
         time : str = gloutils.get_current_utc_time()
 
@@ -227,8 +235,8 @@ class Client:
 
         Met à jour l'attribut `_username`.
         """
-        msg_logout = gloutils.GloMessage(gloutils.Headers.AUTH_LOGOUT)
-        glosocket.send_mesg(msg_logout)
+        msg_logout = gloutils.GloMessage(header = gloutils.Headers.AUTH_LOGOUT, payload = "")
+        glosocket.send_mesg(self._client_socket, json.dumps(msg_logout))
         self._username = None
 
     def run(self) -> None:
@@ -257,6 +265,7 @@ class Client:
                     case 2 :
                         self._login()
                     case 3:
+                        self._quit()
                         sys.exit(0)
 
             else :
@@ -277,7 +286,7 @@ class Client:
                     case 3:
                         self._check_stats()
                     case 4:
-                        self._quit()
+                        self._logout()
                         
     
 
