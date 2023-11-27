@@ -318,12 +318,15 @@ class Server:
                         
                         case {"header" : gloutils.Headers.INBOX_READING_CHOICE,
                               "payload" : payload}:
-                            pass
+                            
+                            reply = self._get_email(waiter, payload)
+                            glosocket.send_mesg(waiter, json.dumps(reply))
 
                         case {"header" : gloutils.Headers.INBOX_READING_REQUEST,
                               "payload" : payload}:
                             reply = self._get_email_list(waiter)
                             glosocket.send_mesg(waiter, json.dumps(reply))
+
                         case {"header"  : gloutils.Headers.STATS_REQUEST,
                               "payload" : payload}:
                             pass
