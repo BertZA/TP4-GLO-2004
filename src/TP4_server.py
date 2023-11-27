@@ -386,8 +386,6 @@ class Server:
                             reply  = self._send_email(payload)
                             glosocket.send_mesg(waiter, json.dumps(reply))
                 
-
-
 def _main() -> int:
     server = Server()
     try:

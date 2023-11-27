@@ -301,7 +301,6 @@ class Client:
                         self._logout()
                         
     
-
 def _main() -> int:
     #parser = argparse.ArgumentParser()
     #parser.add_argument("-d", "--destination", action="store",
